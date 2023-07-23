@@ -372,7 +372,8 @@ const MAVLINK_IFLAG_SIGNED: u8 = 0x01;
 
 const HEADER_SIZE_V2: usize = 9;
 const SIGNATURE_SIZE_V2: usize = 13;
-const MAX_SIZE_V2: usize = 1 + HEADER_SIZE_V2 + 255 + 2 + SIGNATURE_SIZE_V2;
+
+pub const MAX_SIZE_V2: usize = 1 + HEADER_SIZE_V2 + 255 + 2 + SIGNATURE_SIZE_V2;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 // Follow protocol definition: `<https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format>`

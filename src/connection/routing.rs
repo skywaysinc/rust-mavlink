@@ -22,7 +22,7 @@ impl<M: Message> RawMavV2Connection<M> for UdpConnection {
     fn raw_write(&self, raw_msg: &mut MAVLinkV2MessageRaw) -> io::Result<usize> {
         let mut guard = self.writer.lock().unwrap();
         let state = &mut *guard;
-
+        #[cfg(feature = "routing")]
         raw_msg.patch_sequence::<M>(state.sequence);
         state.sequence = state.sequence.wrapping_add(1);
 
@@ -51,7 +51,9 @@ impl<M: Message> RawMavV2Connection<M> for UdpConnection {
                     self.writer.lock().unwrap().dest = Some(src);
                 }
             }
-            let Ok(raw_message) = read_v2_raw_message(&mut state.recv_buf) else {continue;};
+            let Ok(raw_message) = read_v2_raw_message(&mut state.recv_buf) else {
+                continue;
+            };
             if raw_message.has_valid_crc::<M>() {
                 return Ok(raw_message);
             }
