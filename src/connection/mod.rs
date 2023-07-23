@@ -9,7 +9,7 @@ mod tcp;
 pub mod udp;
 
 #[cfg(feature = "direct-serial")]
-mod direct_serial;
+pub mod direct_serial;
 
 mod file;
 pub mod routing;
