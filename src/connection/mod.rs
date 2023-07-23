@@ -6,12 +6,13 @@ use std::io::{self};
 mod tcp;
 
 #[cfg(feature = "udp")]
-mod udp;
+pub mod udp;
 
 #[cfg(feature = "direct-serial")]
 mod direct_serial;
 
 mod file;
+pub mod routing;
 
 /// A MAVLink connection
 pub trait MavConnection<M: Message> {

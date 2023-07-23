@@ -60,13 +60,13 @@ pub fn udpin<T: ToSocketAddrs>(address: T) -> io::Result<UdpConnection> {
     UdpConnection::new(socket, true, None)
 }
 
-struct UdpWrite {
-    socket: UdpSocket,
-    dest: Option<SocketAddr>,
-    sequence: u8,
+pub(crate) struct UdpWrite {
+    pub(crate) socket: UdpSocket,
+    pub(crate) dest: Option<SocketAddr>,
+    pub(crate) sequence: u8,
 }
 
-struct PacketBuf {
+pub(crate) struct PacketBuf {
     buf: Vec<u8>,
     start: usize,
     end: usize,
@@ -110,16 +110,16 @@ impl Read for PacketBuf {
     }
 }
 
-struct UdpRead {
-    socket: UdpSocket,
-    recv_buf: PacketBuf,
+pub(crate) struct UdpRead {
+    pub(crate) socket: UdpSocket,
+    pub(crate) recv_buf: PacketBuf,
 }
 
 pub struct UdpConnection {
-    reader: Mutex<UdpRead>,
-    writer: Mutex<UdpWrite>,
+    pub(crate) reader: Mutex<UdpRead>,
+    pub(crate) writer: Mutex<UdpWrite>,
     protocol_version: MavlinkVersion,
-    server: bool,
+    pub(crate) server: bool,
 }
 
 impl UdpConnection {
