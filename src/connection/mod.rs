@@ -6,12 +6,19 @@ use std::io::{self};
 mod tcp;
 
 #[cfg(feature = "udp")]
+#[cfg(not(feature = "routing"))]
+mod udp;
+
+#[cfg(feature = "udp")]
+#[cfg(feature = "routing")]
 pub mod udp;
 
 #[cfg(feature = "direct-serial")]
 pub mod direct_serial;
 
 mod file;
+
+#[cfg(feature = "routing")]
 pub mod routing;
 
 /// A MAVLink connection

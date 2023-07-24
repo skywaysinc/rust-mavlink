@@ -373,7 +373,7 @@ const MAVLINK_IFLAG_SIGNED: u8 = 0x01;
 
 const HEADER_SIZE_V2: usize = 9;
 const SIGNATURE_SIZE_V2: usize = 13;
-pub const MAX_SIZE_V2: usize = 1 + HEADER_SIZE_V2 + 255 + 2 + SIGNATURE_SIZE_V2;
+const MAX_SIZE_V2: usize = 1 + HEADER_SIZE_V2 + 255 + 2 + SIGNATURE_SIZE_V2;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 // Follow protocol definition: `<https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format>`
@@ -421,6 +421,7 @@ impl MAVLinkV2MessageRaw {
     }
 
     #[inline]
+    #[cfg(feature = "routing")]
     pub(crate) fn patch_sequence<M: Message>(&mut self, new_sequence: u8) {
         self.0[4] = new_sequence;
         self.update_crc::<M>();
