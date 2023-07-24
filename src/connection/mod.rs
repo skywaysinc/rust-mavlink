@@ -17,6 +17,8 @@ pub mod udp;
 pub mod direct_serial;
 
 mod file;
+
+#[cfg(feature = "routing")]
 pub mod routing;
 
 #[cfg(feature = "routing")]
