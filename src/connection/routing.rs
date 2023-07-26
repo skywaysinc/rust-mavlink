@@ -29,7 +29,7 @@ impl<M: Message> RawMavV2Connection<M> for UdpConnection {
         state.sequence = state.sequence.wrapping_add(1);
 
         let len = if let Some(addr) = state.dest {
-            state.socket.send_to(&raw_msg.0, addr)?
+            state.socket.send_to(&raw_msg.0[0..raw_msg.len()], addr)?
         } else {
             0
         };
