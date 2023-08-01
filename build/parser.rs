@@ -631,6 +631,22 @@ impl MavMessage {
         #[cfg(feature = "emit-description")]
         let description = self.emit_description();
 
+        match self.emit_target_offsets() {
+            (Some(target_system_offset), Some(target_component_offset)) => println!(
+                "Target offsets for {} are {}, {}",
+                msg_name, target_system_offset, target_component_offset
+            ),
+            (Some(target_system_offset), None) => println!(
+                "Target offsets for {} are only on system {}",
+                msg_name, target_system_offset
+            ),
+            (None, Some(target_component_offset)) => println!(
+                "Target offsets for {} are only on component {}?! SHOULD NOT HAPPEN",
+                msg_name, target_component_offset
+            ),
+            _ => (),
+        }
+
         #[cfg(not(feature = "emit-description"))]
         let description = quote!();
 
@@ -657,6 +673,22 @@ impl MavMessage {
 
             #default_impl
         }
+    }
+
+    // Precompute the index of target_system and target_component if they exist.
+    fn emit_target_offsets(&self) -> (Option<usize>, Option<usize>) {
+        let mut target_system_offset = None;
+        let mut target_component_offset = None;
+        let mut current_offset = 0usize;
+        for field in &self.fields {
+            match field.name.as_str() {
+                "target_system" => target_system_offset = Some(current_offset),
+                "target_component" => target_component_offset = Some(current_offset),
+                _ => (),
+            }
+            current_offset += field.mavtype.len();
+        }
+        (target_system_offset, target_component_offset)
     }
 }
 
