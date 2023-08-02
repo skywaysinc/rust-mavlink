@@ -137,7 +137,12 @@ impl MavProfile {
             .values()
             .map(|msg| {
                 let target_offsets = msg.compute_target_offsets();
-                quote!(#target_offsets)
+                match target_offsets {
+                    (None, None) => quote!((None, None)),
+                    (None, Some(c)) => quote!((None, Some(#c))),
+                    (Some(s), None) => quote!((Some(#s), None)),
+                    (Some(s), Some(c)) => quote!((Some(#s), Some(#c))),
+                }
             })
             .collect()
     }
@@ -210,6 +215,7 @@ impl MavProfile {
                 #mav_message_id
                 #mav_message_id_from_name
                 #mav_message_default_from_id
+                #mav_target_from_message_id
                 #mav_message_serialize
                 #mav_message_crc
             }
@@ -300,8 +306,8 @@ impl MavProfile {
         target_offsets: &[TokenStream],
     ) -> TokenStream {
         quote! {
-            fn target_offsets_from_id(id: u32) -> (Option(usize), Option(usize)) {
-                match name {
+            fn target_offsets_from_id(id: u32) -> (Option<usize>, Option<usize>) {
+                match id {
                     #(#ids => #target_offsets,)*
                     _ => {
                         (None, None)
