@@ -215,6 +215,7 @@ pub fn read_versioned_msg<M: Message, R: Read>(
 pub struct MAVLinkAnyMessageRaw<const S: usize>([u8; S]);
 
 /// This extracts all the common useful fields from a MAVLink message be a V1 or V2
+#[allow(clippy::len_without_is_empty)]
 pub trait CommonMessageRaw {
     fn message_id(&self) -> u32;
     fn system_id(&self) -> u8;
@@ -229,10 +230,6 @@ pub type MAVLinkV1MessageRaw = MAVLinkAnyMessageRaw<MAX_SIZE_V1>;
 
 const HEADER_SIZE_V1: usize = 5;
 pub const MAX_SIZE_V1: usize = 1 + HEADER_SIZE_V1 + 255 + 2;
-
-//#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-// Follow protocol definition: `<https://mavlink.io/en/guide/serialization.html#v1_packet_format>`
-//pub struct MAVLinkV1MessageRaw([u8; MAX_SIZE_V1]);
 
 impl Default for MAVLinkV1MessageRaw {
     fn default() -> Self {
@@ -258,8 +255,7 @@ impl CommonMessageRaw for MAVLinkV1MessageRaw {
 
     #[inline]
     fn len(&self) -> usize {
-        let payload_length: usize = self.payload_length().into();
-        1 + HEADER_SIZE_V1 + payload_length
+        1 + HEADER_SIZE_V1 + self.payload_length()
     }
 
     #[inline]
@@ -269,8 +265,7 @@ impl CommonMessageRaw for MAVLinkV1MessageRaw {
 
     #[inline]
     fn payload(&self) -> &[u8] {
-        let payload_length: usize = self.payload_length().into();
-        &self.0[(1 + HEADER_SIZE_V1)..(1 + HEADER_SIZE_V1 + payload_length)]
+        &self.0[(1 + HEADER_SIZE_V1)..(1 + HEADER_SIZE_V1 + self.payload_length())]
     }
 
     #[inline]
@@ -310,14 +305,14 @@ impl MAVLinkV1MessageRaw {
 
     #[inline]
     fn mut_payload_and_checksum(&mut self) -> &mut [u8] {
-        let payload_length: usize = self.payload_length().into();
+        let payload_length = self.payload_length();
         &mut self.0[(1 + HEADER_SIZE_V1)..(1 + HEADER_SIZE_V1 + payload_length + 2)]
     }
 
     pub fn calculate_crc<M: Message>(&self) -> u16 {
         let mut crc_calculator = CRCu16::crc16mcrf4cc();
-        crc_calculator.digest(&self.0[1..(1 + HEADER_SIZE_V1 + payload_length)]);
-        let extra_crc = M::extra_crc(self.message_id().into());
+        crc_calculator.digest(&self.0[1..(1 + HEADER_SIZE_V1 + self.payload_length())]);
+        let extra_crc = M::extra_crc(self.message_id());
 
         crc_calculator.digest(&[extra_crc]);
         crc_calculator.get_crc()
@@ -423,7 +418,7 @@ impl CommonMessageRaw for MAVLinkV2MessageRaw {
 
     #[inline]
     fn len(&self) -> usize {
-        let payload_length: usize = self.payload_length().into();
+        let payload_length = self.payload_length();
 
         let signature_size = if (self.incompatibility_flags() & 0x01) == MAVLINK_IFLAG_SIGNED {
             SIGNATURE_SIZE_V2
@@ -445,7 +440,7 @@ impl CommonMessageRaw for MAVLinkV2MessageRaw {
 
     #[inline]
     fn payload(&self) -> &[u8] {
-        let payload_length: usize = self.payload_length().into();
+        let payload_length = self.payload_length();
         &self.0[(1 + HEADER_SIZE_V2)..(1 + HEADER_SIZE_V2 + payload_length)]
     }
 }
@@ -681,7 +676,7 @@ pub fn write_v1_msg<M: Message, W: Write>(
     let mut message_raw = MAVLinkV1MessageRaw::new();
     message_raw.serialize_message(header, data);
 
-    let payload_length: usize = message_raw.payload_length().into();
+    let payload_length = message_raw.payload_length();
     let len = 1 + HEADER_SIZE_V1 + payload_length + 2;
 
     w.write_all(&message_raw.0[..len])?;
