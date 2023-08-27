@@ -21,39 +21,42 @@
   </enums>
   <messages>
     <message id="65535" name="SMURF_GLOBAL_STATS">
-      <description>SMURF global routing statistics</description>
+      <description>SMURF global routing statistics.</description>
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint64_t" name="robot_clock_ns" units="ns">Robot clock value at time of measurement in ns.</field>
-      <field type="uint32_t" name="messages_in">The total mumber of messages routed in.</field>
-      <field type="uint32_t" name="messages_out">The total mumber of messages routed out.</field>
+      <field type="uint32_t" name="num_messages_in">The total mumber of messages routed in.</field>
+      <field type="uint32_t" name="num_messages_out">The total mumber of messages routed out.</field>
       <field type="uint64_t" name="traffic_in_bytes" units="bytes">The total mumber of bytes routed in.</field>
       <field type="uint64_t" name="traffic_out_bytes" units="bytes">The total mumber of bytes routed out.</field>
       <field type="uint32_t" name="unknown_target_errors">Number of messages that could not be routed.</field>
+      <field type="uint32_t" name="num_missing_messages">Number of messages missed from all the links (missing sequence numbers).</field>
       <field type="uint32_t" name="routing_latency_80_ns" units="ns">80 percentile routing latency (for the last messages up to 1024 messages).</field>
       <field type="uint32_t" name="routing_latency_90_ns" units="ns">90 percentile routing latency (for the last messages up to 1024 messages).</field>
       <field type="uint32_t" name="routing_latency_100_ns" units="ns">Max routing latency (for the last messages up to 1024 messages).</field>
     </message>
     <message id="65534" name="SMURF_LINK_STATS">
-      <description>SMURF statistics for one link</description>
+      <description>SMURF statistics for one link.</description>
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint64_t" name="robot_clock_ns" units="ns">Robot clock value at time of measurement in ns.</field>
-      <field type="char[32]" name="link_name">Name of this link.</field>
-      <field type="uint32_t" name="messages_in">The total mumber of messages from that link.</field>
-      <field type="uint32_t" name="messages_out">The total mumber of messages to that link.</field>
+      <field type="char[32]" name="link_name">Name of this link. ie: udpout:12.45.123.2:1234</field>
+      <field type="uint32_t" name="num_messages_in">The total mumber of messages from that link.</field>
+      <field type="uint32_t" name="num_messages_out">The total mumber of messages to that link.</field>
+      <field type="uint32_t" name="num_missing_messages">Number of messages missed from this links (missing sequence numbers).</field>
       <field type="uint64_t" name="traffic_in_bytes" units="bytes">The total mumber of bytes from that link.</field>
       <field type="uint64_t" name="traffic_out_bytes" units="bytes">The total mumber of bytes to that link.</field>
     </message>
     <message id="65533" name="SMURF_SYSTEM_COMPONENT_STATS">
-      <description>SMURF statistics for one System/Components</description>
+      <description>SMURF statistics for one component directly or indirectly (system broadcasts, global broadcasts or targeted).</description>
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint64_t" name="robot_clock_ns" units="ns">Robot clock value at time of measurement in ns.</field>
       <field type="uint8_t" name="stats_for_system">Statistics for this System ID.</field>
       <field type="uint8_t" name="stats_for_component">Statistics for this Component ID.</field>
-      <field type="uint32_t" name="messages_in">The total mumber of messages from that link.</field>
-      <field type="uint32_t" name="messages_out">The total mumber of messages to that link.</field>
+      <field type="uint32_t" name="num_messages_in">The total mumber of messages from that link.</field>
+      <field type="uint32_t" name="num_messages_out">The total mumber of messages to that link.</field>
+      <field type="uint32_t" name="num_missing_messages">Number of messages missed from this component (missing sequence numbers).</field>
       <field type="uint64_t" name="traffic_in_bytes" units="bytes">The total mumber of bytes from that system/component.</field>
       <field type="uint64_t" name="traffic_out_bytes" units="bytes">The total mumber of bytes to that system/component.</field>
       <field type="uint64_t" name="ping_tov_ns" units="ns">Robot clock value at time of validity (TOV) the last ping received.</field>
