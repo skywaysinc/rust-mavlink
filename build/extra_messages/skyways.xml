@@ -43,7 +43,7 @@
       <field type="char[32]" name="link_name">Name of this link. ie: udpout:12.45.123.2:1234</field>
       <field type="uint32_t" name="num_messages_in">The total mumber of messages from that link.</field>
       <field type="uint32_t" name="num_messages_out">The total mumber of messages to that link.</field>
-      <field type="uint32_t" name="num_missing_messages">Number of messages missed from this links (missing sequence numbers).</field>
+      <field type="uint32_t" name="num_messages_skipped">Number of messages received from this link with non contiguous sequence number.</field>
       <field type="uint64_t" name="traffic_in_bytes" units="bytes">The total mumber of bytes from that link.</field>
       <field type="uint64_t" name="traffic_out_bytes" units="bytes">The total mumber of bytes to that link.</field>
     </message>
@@ -52,8 +52,8 @@
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint64_t" name="robot_clock_ns" units="ns">Robot clock value at time of measurement in ns.</field>
-      <field type="uint8_t" name="stats_for_system">Statistics for this System ID.</field>
-      <field type="uint8_t" name="stats_for_component">Statistics for this Component ID.</field>
+      <field type="uint8_t" name="system">Statistics for this System ID.</field>
+      <field type="uint8_t" name="component">Statistics for this Component ID.</field>
       <field type="uint32_t" name="num_messages_in">The total mumber of messages from that link.</field>
       <field type="uint32_t" name="num_messages_out">The total mumber of messages to that link.</field>
       <field type="uint32_t" name="num_missing_messages">Number of messages missed from this component (missing sequence numbers).</field>
