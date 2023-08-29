@@ -46,6 +46,7 @@ log = "*"
     "minimal",
     "python_array_test",
     "standard",
+    "skyways",
     "routing",
     "test",
     "ualberta",
@@ -69,6 +70,7 @@ log = "*"
 "icarous" = []
 "common" = []
 "cubepilot" = ["common"]
+"skyways" = []
 
 "all-dialects" = [
     "ardupilotmega",
@@ -99,7 +101,7 @@ log = "*"
 "serial" = ["serialport"]
 "embedded" = ["embedded-hal", "nb"]
 "serde" = ["dep:serde", "dep:serde_arrays"]
-default = ["std", "tcp", "udp", "serial", "serde", "routing", "ardupilotmega", "format-generated-code"]
+default = ["std", "tcp", "udp", "serial", "serde", "routing", "skyways", "format-generated-code"]
 
 # build with all features on docs.rs so that users viewing documentation
 # can see everything

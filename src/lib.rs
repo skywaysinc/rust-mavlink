@@ -64,7 +64,7 @@ pub const MAX_FRAME_SIZE: usize = 280;
 
 pub trait Message
 where
-    Self: Sized + Copy,
+    Self: Sized + Copy + Send + Sync,
 {
     fn message_id(&self) -> u32;
     fn message_name(&self) -> &'static str;

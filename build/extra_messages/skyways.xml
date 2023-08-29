@@ -65,7 +65,7 @@
     <message id="65530" name="SMURF_STATS_REQUEST">
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
-      <field type="uint16_t" name="requested_stats_types" enum="SMURF_STATS_TYPES" display="bitmask" >Bitfield of statistics to include.</field>
+      <field type="uint16_t" name="requested_stats_types" enum="SMURF_STATS_TYPE" display="bitmask" >Bitfield of statistics to include.</field>
     </message>
   </messages>
 </mavlink>

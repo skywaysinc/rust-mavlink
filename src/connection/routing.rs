@@ -99,7 +99,10 @@ impl CommonMessageRaw for MAVLinkMessageRaw {
 /// between mavlink connections
 /// The Message generic is necessary as we check the message validity from its CRC which is Mavlink
 /// version dependent.
-pub trait RawConnection<M: Message> {
+pub trait RawConnection<M: Message>
+where
+    Self: Sync + Send,
+{
     fn raw_write(&self, raw_msg: &mut MAVLinkMessageRaw) -> io::Result<usize>;
     fn raw_read(&self) -> io::Result<MAVLinkMessageRaw>;
     fn connection_id(&self) -> String;

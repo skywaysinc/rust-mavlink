@@ -27,7 +27,10 @@ mod file;
 pub mod routing;
 
 /// A MAVLink connection
-pub trait MavConnection<M: Message> {
+pub trait MavConnection<M: Message>
+where
+    Self: Sync + Send,
+{
     /// Receive a mavlink message.
     ///
     /// Blocks until a valid frame is received, ignoring invalid messages.
