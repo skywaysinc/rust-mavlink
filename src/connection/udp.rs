@@ -8,9 +8,7 @@ use std::sync::Mutex;
 
 /// UDP MAVLink connection
 
-pub fn select_protocol<M: Message>(
-    address: &str,
-) -> io::Result<Box<dyn MavConnection<M> + Sync + Send>> {
+pub fn select_protocol<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>>> {
     let connection = if let Some(address) = address.strip_prefix("udpin:") {
         udpin(address)
     } else if let Some(address) = address.strip_prefix("udpout:") {

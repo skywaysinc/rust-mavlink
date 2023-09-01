@@ -79,7 +79,7 @@ where
 ///
 /// The type of the connection is determined at runtime based on the address type, so the
 /// connection is returned as a trait object.
-pub fn connect<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M> + Sync + Send>> {
+pub fn connect<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>>> {
     let protocol_err = Err(io::Error::new(
         io::ErrorKind::AddrNotAvailable,
         "Protocol unsupported",
@@ -88,7 +88,7 @@ pub fn connect<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>
     if cfg!(feature = "tcp") && address.starts_with("tcp") {
         #[cfg(feature = "tcp")]
         {
-            tcp::select_protocol(address)
+            Ok(tcp::select_protocol(address)?)
         }
         #[cfg(not(feature = "tcp"))]
         {
@@ -97,7 +97,7 @@ pub fn connect<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>
     } else if cfg!(feature = "udp") && address.starts_with("udp") {
         #[cfg(feature = "udp")]
         {
-            udp::select_protocol(address)
+            Ok(udp::select_protocol(address)?)
         }
         #[cfg(not(feature = "udp"))]
         {
