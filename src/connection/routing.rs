@@ -214,7 +214,6 @@ impl<M: Message> RawConnection<M> for UdpConnection {
         let mut guard = self.reader.lock().unwrap();
         let state = &mut *guard;
         loop {
-            debug!("Looping...");
             if state.recv_buf.len() == 0 {
                 // debug!("UDP: Waiting for data");
                 let (len, src) = match state.socket.recv_from(state.recv_buf.reset()) {
