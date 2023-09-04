@@ -23,7 +23,7 @@
 #![warn(clippy::use_self)]
 
 use crate::connection::routing::MAVLinkMessageRaw;
-use core::result::Result;
+use core::{fmt::Debug, result::Result};
 
 #[cfg(feature = "std")]
 use std::io::{Read, Write};
@@ -62,7 +62,7 @@ use embedded::{Read, Write};
 
 pub const MAX_FRAME_SIZE: usize = 280;
 
-pub trait Message
+pub trait Message: Debug
 where
     Self: Sized + Copy + Send + Sync,
 {

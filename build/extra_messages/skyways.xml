@@ -67,5 +67,9 @@
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint16_t" name="requested_stats_types" enum="SMURF_STATS_TYPE" display="bitmask" >Bitfield of statistics to include.</field>
     </message>
+    <message id="65500" name="SMURF_HEARTBEAT">
+      <field type="uint8_t" name="target_system">Target System ID. Probably wants 0 most of the time.</field>
+      <field type="uint8_t" name="target_component">Target Component ID. Probably wants 0 most of the time.</field>
+    </message>
   </messages>
 </mavlink>
