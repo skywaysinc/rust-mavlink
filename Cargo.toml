@@ -101,7 +101,7 @@ log = "*"
 "serial" = ["serialport"]
 "embedded" = ["embedded-hal", "nb"]
 "serde" = ["dep:serde", "dep:serde_arrays"]
-default = ["std", "tcp", "udp", "serial", "serde", "routing", "skyways", "format-generated-code"]
+default = ["std", "tcp", "udp", "serial", "serde", "routing", "skyways", "ardupilotmega", "format-generated-code"]
 
 # build with all features on docs.rs so that users viewing documentation
 # can see everything

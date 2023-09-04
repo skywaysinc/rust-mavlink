@@ -4,6 +4,7 @@ mod test_shared;
 mod test_udp_connections {
     use crate::test_shared::get_heartbeat_msg;
     use mavlink::common::MavMessage;
+    use mavlink::connection::routing::MAVLinkMessageRaw;
     use mavlink::connection::routing::RawConnection;
     use mavlink::connection::udp::{udpin, udpout};
     use mavlink::CommonMessageRaw;
@@ -32,7 +33,9 @@ mod test_udp_connections {
                 let client = udpout("127.0.0.1:14551").expect("Couldn't create client");
                 let raw_client = &client as &dyn RawConnection<MavMessage>;
                 loop {
-                    raw_client.raw_write(&mut raw_msg).ok();
+                    raw_client
+                        .raw_write(&mut MAVLinkMessageRaw::V2(raw_msg))
+                        .ok();
                 }
             }
         });
