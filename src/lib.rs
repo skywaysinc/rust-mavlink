@@ -45,8 +45,9 @@ use utils::{remove_trailing_zeroes, RustDefault};
 use serde::{Deserialize, Serialize};
 
 use crate::{bytes::Bytes, error::ParserError};
-
 use crc_any::CRCu16;
+use log::debug;
+use log::error;
 
 // include generate definitions
 include!(concat!(env!("OUT_DIR"), "/mod.rs"));
@@ -163,9 +164,9 @@ impl<M: Message> MavFrame<M> {
     pub fn deser(version: MavlinkVersion, input: &[u8]) -> Result<Self, ParserError> {
         let mut buf = Bytes::new(input);
 
+        let sequence = buf.get_u8();
         let system_id = buf.get_u8();
         let component_id = buf.get_u8();
-        let sequence = buf.get_u8();
         let header = MavHeader {
             system_id,
             component_id,
@@ -173,8 +174,8 @@ impl<M: Message> MavFrame<M> {
         };
 
         let msg_id = match version {
-            MavlinkVersion::V2 => buf.get_u32_le(),
-            MavlinkVersion::V1 => buf.get_u8().into(),
+            MavlinkVersion::V2 => buf.get_u24_le(),
+            MavlinkVersion::V1 => buf.get_u8() as u32,
         };
 
         match M::parse(version, msg_id, buf.remaining_bytes()) {
@@ -320,7 +321,6 @@ impl MAVLinkV1MessageRaw {
         let mut crc_calculator = CRCu16::crc16mcrf4cc();
         crc_calculator.digest(&self.0[1..(1 + HEADER_SIZE_V1 + self.payload_length())]);
         let extra_crc = M::extra_crc(self.message_id());
-
         crc_calculator.digest(&[extra_crc]);
         crc_calculator.get_crc()
     }
@@ -619,7 +619,7 @@ pub fn read_v2_raw_message<R: Read>(
         if c == MAV_STX_V2 {
             break;
         } else {
-            println!("Discarding byte: {:x}", c);
+            debug!("Discarding byte: {:x}", c);
         }
     }
 
@@ -628,7 +628,6 @@ pub fn read_v2_raw_message<R: Read>(
     message.0[0] = MAV_STX_V2;
     reader.read_exact(message.mut_header())?;
     reader.read_exact(message.mut_payload_and_checksum_and_sign())?;
-
     Ok(message)
 }
 
@@ -639,7 +638,7 @@ pub fn read_v2_msg<M: Message, R: Read>(
     loop {
         let message = read_v2_raw_message(read)?;
         if !message.has_valid_crc::<M>() {
-            // bad crc: ignore message
+            error!("Bad CRC for message: {:?}", message);
             continue;
         }
 

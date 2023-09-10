@@ -1,7 +1,6 @@
 //! Implements primitives to allow a fast routing of Mavlink messages.
 //!
 //!
-
 use crate::connection::direct_serial::SerialConnection;
 use crate::connection::tcp::TcpConnection;
 use crate::connection::udp::UdpConnection;
@@ -14,6 +13,7 @@ use crate::MAVLinkV2MessageRaw;
 use crate::Message;
 use core::cell::RefCell;
 use log::debug;
+use log::warn;
 use serialport::SerialPort;
 use std::collections::HashMap;
 use std::io::{self, Write};
@@ -215,42 +215,37 @@ impl<M: Message> RawConnection<M> for UdpConnection {
         let state = &mut *guard;
         loop {
             if state.recv_buf.len() == 0 {
-                // debug!("UDP: Waiting for data");
                 let (len, src) = match state.socket.recv_from(state.recv_buf.reset()) {
                     Ok((len, src)) => (len, src),
                     Err(error) => {
                         return Err(error);
                     }
                 };
-                // debug!("set_len");
                 state.recv_buf.set_len(len);
 
                 if self.server {
-                    //debug!("writer");
                     self.writer.lock().unwrap().dest = Some(src);
                 }
             }
             if state.recv_buf.slice()[0] == crate::MAV_STX {
                 let Ok(msg) = read_v1_raw_message(&mut state.recv_buf) else {
-                    //debug!("1st continue");
+                    warn!("Error parsing a v1 Message.");
                     continue;
                 };
                 return Ok(MAVLinkMessageRaw::V1(msg));
             } else {
                 if state.recv_buf.slice()[0] != crate::MAV_STX_V2 {
-                    //debug!("2st continue");
                     state.recv_buf.reset();
                     continue;
                 }
                 let Ok(msg) = read_v2_raw_message(&mut state.recv_buf) else {
-                    //debug!("3st continue");
+                    warn!("Error parsing a v2 Message.");
                     continue;
                 };
                 if !msg.has_valid_crc::<M>() {
-                    //debug!("4st continue");
+                    warn!("Invalid CRC: msg={:?}.", msg);
                     continue;
                 }
-                //debug!("return message");
                 return Ok(MAVLinkMessageRaw::V2(msg));
             }
         }

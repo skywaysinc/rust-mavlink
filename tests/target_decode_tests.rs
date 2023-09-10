@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use arrayvec::ArrayString;
     use mavlink::ardupilotmega::MavMessage;
     use mavlink::ardupilotmega::CHANGE_OPERATOR_CONTROL_DATA;
     use mavlink::ardupilotmega::DEBUG_DATA;
@@ -54,7 +55,7 @@ mod tests {
             target_system: 122,
             control_request: 0,
             version: 0,
-            passkey: [0; 25],
+            passkey: ArrayString::from("").unwrap(),
         });
         let mut buffer: [u8; 300] = [0; 300];
 
