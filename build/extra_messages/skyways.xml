@@ -40,7 +40,7 @@
       <field type="uint8_t" name="target_system">Target System ID.</field>
       <field type="uint8_t" name="target_component">Target Component ID.</field>
       <field type="uint64_t" name="robot_clock_ns" units="ns">Robot clock value at time of measurement in ns.</field>
-      <field type="char[32]" name="link_name">Name of this link. ie: udpout:12.45.123.2:1234</field>
+      <field type="char[64]" name="link_name">Name of this link. ie: udpout:12.45.123.2:1234</field>
       <field type="uint32_t" name="num_messages_in">The total mumber of messages from that link.</field>
       <field type="uint32_t" name="num_messages_out">The total mumber of messages to that link.</field>
       <field type="uint32_t" name="num_messages_skipped">Number of messages received from this link with non contiguous sequence number.</field>
