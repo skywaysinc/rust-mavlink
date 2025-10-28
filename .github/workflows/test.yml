@@ -22,7 +22,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly-2022-11-30
+          toolchain: stable
           components: clippy
       - uses: actions-rs/clippy-check@v1
         with:
@@ -71,11 +71,8 @@ jobs:
         with:
           toolchain: "1.60.0"
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: check
-          args: --all-targets
+      - name: Check MSRV
+        run: cargo check --all-targets
 
   build:
     needs: [formatting, linting, internal-tests, mavlink-dump, msrv]
