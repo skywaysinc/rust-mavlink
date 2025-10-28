@@ -227,6 +227,10 @@ impl<M: Message> RawConnection<M> for UdpConnection {
                     self.writer.lock().unwrap().dest = Some(src);
                 }
             }
+            // Skip empty packets (valid in UDP but not MAVLink)
+            if state.recv_buf.len() == 0 {
+                continue;
+            }
             if state.recv_buf.slice()[0] == crate::MAV_STX {
                 let Ok(msg) = read_v1_raw_message(&mut state.recv_buf) else {
                     warn!("Error parsing a v1 Message.");
