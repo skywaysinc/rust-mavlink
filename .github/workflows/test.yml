@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   formatting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -15,7 +15,7 @@ jobs:
         run: cargo fmt --all -- --check
 
   linting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -28,7 +28,7 @@ jobs:
           args: --all --all-targets
 
   internal-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -46,7 +46,7 @@ jobs:
           done
 
   mavlink-dump:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -56,7 +56,7 @@ jobs:
         run: cargo build --verbose --bin mavlink-dump --features ardupilotmega
 
   msrv:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -80,23 +80,23 @@ jobs:
             TARGET: x86_64-apple-darwin
             FEATURES: --features ardupilotmega
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             TARGET: arm-unknown-linux-musleabihf
             FLAGS: --features ardupilotmega
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             TARGET: armv7-unknown-linux-musleabihf
             FLAGS: --features ardupilotmega
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             TARGET: x86_64-unknown-linux-musl
             FLAGS: --features ardupilotmega
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             TARGET: x86_64-unknown-linux-musl
             FLAGS: --features ardupilotmega,emit-description,emit-extensions
 
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             TARGET: thumbv7m-none-eabi
             FLAGS: --no-default-features --features embedded
 
@@ -121,7 +121,7 @@ jobs:
 
   test-embedded-size:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@master
@@ -134,7 +134,7 @@ jobs:
 
   docs:
     needs: internal-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@master
     - uses: actions-rs/toolchain@v1.0.6
