@@ -100,9 +100,10 @@ jobs:
             TARGET: x86_64-unknown-linux-musl
             FLAGS: --features ardupilotmega,emit-description,emit-extensions
 
-          - os: ubuntu-22.04
-            TARGET: thumbv7m-none-eabi
-            FLAGS: --no-default-features --features embedded
+          # Disabled: Thumb/embedded targets not used
+          # - os: ubuntu-22.04
+          #   TARGET: thumbv7m-none-eabi
+          #   FLAGS: --no-default-features --features embedded
 
           - os: windows-latest
             TARGET: x86_64-pc-windows-msvc
@@ -126,20 +127,21 @@ jobs:
           command: build
           args: --verbose --release --target=${{ matrix.TARGET }} ${{ matrix.FLAGS }}
 
-  test-embedded-size:
-    needs: build
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@master
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
-          target: thumbv7em-none-eabihf
-          override: true
-      - name: Build
-        run: cargo +nightly build --target thumbv7em-none-eabihf --manifest-path examples/embedded/Cargo.toml --out-dir $PWD --release -Z unstable-options
+  # Disabled: Embedded/Thumb targets not used
+  # test-embedded-size:
+  #   needs: build
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - uses: actions/checkout@master
+  #     - name: Install system dependencies
+  #       run: sudo apt-get update && sudo apt-get install -y libudev-dev
+  #     - uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: nightly
+  #         target: thumbv7em-none-eabihf
+  #         override: true
+  #     - name: Build
+  #       run: cargo +nightly build --target thumbv7em-none-eabihf --manifest-path examples/embedded/Cargo.toml --out-dir $PWD --release -Z unstable-options
 
   docs:
     needs: internal-tests
