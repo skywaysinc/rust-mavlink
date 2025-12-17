@@ -290,12 +290,23 @@ impl<M: Message> MavConnection<M> for UdpMultiConnection {
 ///
 /// When `max_clients` is omitted, defaults to 64.
 pub fn udpins(address: &str) -> io::Result<UdpMultiConnection> {
-    let (addr_str, max_clients) = match address.rsplit_once(':') {
-        Some((left, right)) => match right.parse::<usize>() {
-            Ok(n) => (left, n),
-            Err(_) => (address, DEFAULT_MAX_CLIENTS),
-        },
-        None => (address, DEFAULT_MAX_CLIENTS),
+    // First, try to interpret the entire address as a valid socket address (host:port)
+    let (addr_str, max_clients) = if address
+        .to_socket_addrs()
+        .ok()
+        .and_then(|mut i| i.next())
+        .is_some()
+    {
+        (address, DEFAULT_MAX_CLIENTS)
+    } else {
+        // If that fails, try to split off a trailing max_clients value
+        match address.rsplit_once(':') {
+            Some((left, right)) => match right.parse::<usize>() {
+                Ok(n) => (left, n),
+                Err(_) => (address, DEFAULT_MAX_CLIENTS),
+            },
+            None => (address, DEFAULT_MAX_CLIENTS),
+        }
     };
     let addr = addr_str
         .to_socket_addrs()?
