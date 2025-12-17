@@ -222,13 +222,61 @@ impl UdpMultiConnection {
             }),
             writer: Mutex::new(UdpMultiWrite {
                 socket,
-                dests: Vec::with_capacity(max_clients.min(64)),
+                dests: Vec::with_capacity(max_clients),
                 max_clients,
                 sequence: 0,
             }),
             protocol_version: MavlinkVersion::V2,
             id: id.to_string(),
         })
+    }
+}
+
+impl<M: Message> MavConnection<M> for UdpMultiConnection {
+    fn recv(&self) -> Result<(MavHeader, M), crate::error::MessageReadError> {
+        let mut guard = self.reader.lock().unwrap();
+        let state = &mut *guard;
+        loop {
+            if state.recv_buf.len() == 0 {
+                let (len, src) = state.socket.recv_from(state.recv_buf.reset())?;
+                state.recv_buf.set_len(len);
+                let mut w = self.writer.lock().unwrap();
+                if !w.dests.contains(&src) {
+                    if w.dests.len() >= w.max_clients {
+                        w.dests.swap_remove(0);
+                    }
+                    w.dests.push(src);
+                }
+            }
+            if let ok @ Ok(..) = read_versioned_msg(&mut state.recv_buf, self.protocol_version) {
+                return ok;
+            }
+        }
+    }
+
+    fn send(&self, header: &MavHeader, data: &M) -> Result<usize, crate::error::MessageWriteError> {
+        let mut guard = self.writer.lock().unwrap();
+        let state = &mut *guard;
+        let header = MavHeader {
+            sequence: state.sequence,
+            system_id: header.system_id,
+            component_id: header.component_id,
+        };
+        state.sequence = state.sequence.wrapping_add(1);
+        let mut buf = Vec::new();
+        write_versioned_msg(&mut buf, self.protocol_version, header, data)?;
+        for &addr in state.dests.iter() {
+            let _ = state.socket.send_to(&buf, addr);
+        }
+        Ok(buf.len())
+    }
+
+    fn set_protocol_version(&mut self, version: MavlinkVersion) {
+        self.protocol_version = version;
+    }
+
+    fn get_protocol_version(&self) -> MavlinkVersion {
+        self.protocol_version
     }
 }
 
@@ -240,7 +288,7 @@ pub fn udpins(address: &str) -> io::Result<UdpMultiConnection> {
     let addr = addr_str
         .to_socket_addrs()?
         .next()
-        .expect("udpins: invalid address");
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "udpins: invalid address"))?;
     let socket = UdpSocket::bind(addr)?;
     UdpMultiConnection::new(socket, &format!("udpins:{}", address), max_clients)
 }

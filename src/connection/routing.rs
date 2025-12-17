@@ -346,14 +346,11 @@ impl<M: Message> RawConnection<M> for TcpConnection {
 
 impl<M: Message> RawConnection<M> for UdpMultiConnection {
     fn raw_write(&self, msg: &mut MAVLinkMessageRaw) -> io::Result<usize> {
-        let mut guard = self.writer.lock().unwrap();
-        let state = &mut *guard;
-        state.sequence = state.sequence.wrapping_add(1);
-        Ok(state
-            .dests
-            .iter()
-            .filter_map(|&a| state.socket.send_to(msg.full(), a).ok())
-            .sum())
+        let guard = self.writer.lock().unwrap();
+        for &addr in guard.dests.iter() {
+            let _ = guard.socket.send_to(msg.full(), addr);
+        }
+        Ok(msg.len())
     }
 
     fn raw_read(&self) -> io::Result<MAVLinkMessageRaw> {
@@ -366,7 +363,7 @@ impl<M: Message> RawConnection<M> for UdpMultiConnection {
                 let mut w = self.writer.lock().unwrap();
                 if !w.dests.contains(&src) {
                     if w.dests.len() >= w.max_clients {
-                        w.dests.remove(0);
+                        w.dests.swap_remove(0);
                     }
                     w.dests.push(src);
                 }
