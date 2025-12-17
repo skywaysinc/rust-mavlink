@@ -206,6 +206,10 @@ pub(super) struct UdpMultiWrite {
     pub(super) sequence: u8,
 }
 
+/// UDP MAVLink connection supporting multiple clients.
+///
+/// Unlike `UdpConnection` which tracks a single remote endpoint,
+/// this connection broadcasts to all clients that have sent packets.
 pub struct UdpMultiConnection {
     pub(super) reader: Mutex<UdpRead>,
     pub(super) writer: Mutex<UdpMultiWrite>,
@@ -280,10 +284,18 @@ impl<M: Message> MavConnection<M> for UdpMultiConnection {
     }
 }
 
+/// Creates a UDP server connection that broadcasts to multiple clients.
+///
+/// Address format: `host:port` or `host:port:max_clients`
+///
+/// When `max_clients` is omitted, defaults to 64.
 pub fn udpins(address: &str) -> io::Result<UdpMultiConnection> {
     let (addr_str, max_clients) = match address.rsplit_once(':') {
-        Some((left, right)) if right.parse::<usize>().is_ok() => (left, right.parse().unwrap()),
-        _ => (address, DEFAULT_MAX_CLIENTS),
+        Some((left, right)) => match right.parse::<usize>() {
+            Ok(n) => (left, n),
+            Err(_) => (address, DEFAULT_MAX_CLIENTS),
+        },
+        None => (address, DEFAULT_MAX_CLIENTS),
     };
     let addr = addr_str
         .to_socket_addrs()?

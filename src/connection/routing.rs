@@ -346,10 +346,18 @@ impl<M: Message> RawConnection<M> for TcpConnection {
 
 impl<M: Message> RawConnection<M> for UdpMultiConnection {
     fn raw_write(&self, msg: &mut MAVLinkMessageRaw) -> io::Result<usize> {
-        let guard = self.writer.lock().unwrap();
-        for &addr in guard.dests.iter() {
-            let _ = guard.socket.send_to(msg.full(), addr);
+        let mut guard = self.writer.lock().unwrap();
+        let state = &mut *guard;
+        let bf = std::time::Instant::now();
+        state.sequence = state.sequence.wrapping_add(1);
+
+        for &addr in state.dests.iter() {
+            let _ = state.socket.send_to(msg.full(), addr);
         }
+        if bf.elapsed().as_millis() > 100 {
+            debug!("Took too long to write UDP: {}ms", bf.elapsed().as_millis());
+        }
+
         Ok(msg.len())
     }
 
@@ -358,8 +366,14 @@ impl<M: Message> RawConnection<M> for UdpMultiConnection {
         let state = &mut *guard;
         loop {
             if state.recv_buf.len() == 0 {
-                let (len, src) = state.socket.recv_from(state.recv_buf.reset())?;
+                let (len, src) = match state.socket.recv_from(state.recv_buf.reset()) {
+                    Ok((len, src)) => (len, src),
+                    Err(error) => {
+                        return Err(error);
+                    }
+                };
                 state.recv_buf.set_len(len);
+
                 let mut w = self.writer.lock().unwrap();
                 if !w.dests.contains(&src) {
                     if w.dests.len() >= w.max_clients {
@@ -368,6 +382,7 @@ impl<M: Message> RawConnection<M> for UdpMultiConnection {
                     w.dests.push(src);
                 }
             }
+            // Skip empty packets (valid in UDP but not MAVLink)
             if state.recv_buf.len() == 0 {
                 continue;
             }
@@ -377,20 +392,21 @@ impl<M: Message> RawConnection<M> for UdpMultiConnection {
                     continue;
                 };
                 return Ok(MAVLinkMessageRaw::V1(msg));
+            } else {
+                if state.recv_buf.slice()[0] != crate::MAV_STX_V2 {
+                    state.recv_buf.reset();
+                    continue;
+                }
+                let Ok(msg) = read_v2_raw_message(&mut state.recv_buf) else {
+                    warn!("Error parsing a v2 Message.");
+                    continue;
+                };
+                if !msg.has_valid_crc::<M>() {
+                    warn!("Invalid CRC: msg={:?}.", msg);
+                    continue;
+                }
+                return Ok(MAVLinkMessageRaw::V2(msg));
             }
-            if state.recv_buf.slice()[0] != crate::MAV_STX_V2 {
-                state.recv_buf.reset();
-                continue;
-            }
-            let Ok(msg) = read_v2_raw_message(&mut state.recv_buf) else {
-                warn!("Error parsing a v2 Message.");
-                continue;
-            };
-            if !msg.has_valid_crc::<M>() {
-                warn!("Invalid CRC: msg={:?}.", msg);
-                continue;
-            }
-            return Ok(MAVLinkMessageRaw::V2(msg));
         }
     }
 
