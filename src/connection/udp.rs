@@ -219,6 +219,7 @@ pub struct UdpMultiConnection {
 
 impl UdpMultiConnection {
     pub fn new(socket: UdpSocket, id: &str, max_clients: usize) -> io::Result<Self> {
+        let max_clients = max_clients.max(1);
         Ok(Self {
             reader: Mutex::new(UdpRead {
                 socket: socket.try_clone()?,
