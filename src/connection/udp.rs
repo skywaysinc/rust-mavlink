@@ -6,6 +6,8 @@ use std::net::ToSocketAddrs;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::Mutex;
 
+const DEFAULT_MAX_CLIENTS: usize = 64;
+
 /// UDP MAVLink connection
 
 pub fn select_protocol<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>>> {
@@ -195,4 +197,50 @@ impl<M: Message> MavConnection<M> for UdpConnection {
     fn get_protocol_version(&self) -> MavlinkVersion {
         self.protocol_version
     }
+}
+
+pub(super) struct UdpMultiWrite {
+    pub(super) socket: UdpSocket,
+    pub(super) dests: Vec<SocketAddr>,
+    pub(super) max_clients: usize,
+    pub(super) sequence: u8,
+}
+
+pub struct UdpMultiConnection {
+    pub(super) reader: Mutex<UdpRead>,
+    pub(super) writer: Mutex<UdpMultiWrite>,
+    protocol_version: MavlinkVersion,
+    pub(super) id: String,
+}
+
+impl UdpMultiConnection {
+    pub fn new(socket: UdpSocket, id: &str, max_clients: usize) -> io::Result<Self> {
+        Ok(Self {
+            reader: Mutex::new(UdpRead {
+                socket: socket.try_clone()?,
+                recv_buf: PacketBuf::new(),
+            }),
+            writer: Mutex::new(UdpMultiWrite {
+                socket,
+                dests: Vec::with_capacity(max_clients.min(64)),
+                max_clients,
+                sequence: 0,
+            }),
+            protocol_version: MavlinkVersion::V2,
+            id: id.to_string(),
+        })
+    }
+}
+
+pub fn udpins(address: &str) -> io::Result<UdpMultiConnection> {
+    let (addr_str, max_clients) = match address.rsplit_once(':') {
+        Some((left, right)) if right.parse::<usize>().is_ok() => (left, right.parse().unwrap()),
+        _ => (address, DEFAULT_MAX_CLIENTS),
+    };
+    let addr = addr_str
+        .to_socket_addrs()?
+        .next()
+        .expect("udpins: invalid address");
+    let socket = UdpSocket::bind(addr)?;
+    UdpMultiConnection::new(socket, &format!("udpins:{}", address), max_clients)
 }

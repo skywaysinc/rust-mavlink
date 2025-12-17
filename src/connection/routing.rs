@@ -3,7 +3,7 @@
 //!
 use crate::connection::direct_serial::SerialConnection;
 use crate::connection::tcp::TcpConnection;
-use crate::connection::udp::UdpConnection;
+use crate::connection::udp::{UdpConnection, UdpMultiConnection};
 use crate::read_raw_message;
 use crate::read_v1_raw_message;
 use crate::read_v2_raw_message;
@@ -341,5 +341,63 @@ impl<M: Message> RawConnection<M> for TcpConnection {
 
     fn connection_id(&self) -> String {
         self.id.clone() //FIXME(gbin)
+    }
+}
+
+impl<M: Message> RawConnection<M> for UdpMultiConnection {
+    fn raw_write(&self, msg: &mut MAVLinkMessageRaw) -> io::Result<usize> {
+        let mut guard = self.writer.lock().unwrap();
+        let state = &mut *guard;
+        state.sequence = state.sequence.wrapping_add(1);
+        Ok(state
+            .dests
+            .iter()
+            .filter_map(|&a| state.socket.send_to(msg.full(), a).ok())
+            .sum())
+    }
+
+    fn raw_read(&self) -> io::Result<MAVLinkMessageRaw> {
+        let mut guard = self.reader.lock().unwrap();
+        let state = &mut *guard;
+        loop {
+            if state.recv_buf.len() == 0 {
+                let (len, src) = state.socket.recv_from(state.recv_buf.reset())?;
+                state.recv_buf.set_len(len);
+                let mut w = self.writer.lock().unwrap();
+                if !w.dests.contains(&src) {
+                    if w.dests.len() >= w.max_clients {
+                        w.dests.remove(0);
+                    }
+                    w.dests.push(src);
+                }
+            }
+            if state.recv_buf.len() == 0 {
+                continue;
+            }
+            if state.recv_buf.slice()[0] == crate::MAV_STX {
+                let Ok(msg) = read_v1_raw_message(&mut state.recv_buf) else {
+                    warn!("Error parsing a v1 Message.");
+                    continue;
+                };
+                return Ok(MAVLinkMessageRaw::V1(msg));
+            }
+            if state.recv_buf.slice()[0] != crate::MAV_STX_V2 {
+                state.recv_buf.reset();
+                continue;
+            }
+            let Ok(msg) = read_v2_raw_message(&mut state.recv_buf) else {
+                warn!("Error parsing a v2 Message.");
+                continue;
+            };
+            if !msg.has_valid_crc::<M>() {
+                warn!("Invalid CRC: msg={:?}.", msg);
+                continue;
+            }
+            return Ok(MAVLinkMessageRaw::V2(msg));
+        }
+    }
+
+    fn connection_id(&self) -> String {
+        self.id.clone()
     }
 }
