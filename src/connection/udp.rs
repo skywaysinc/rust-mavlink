@@ -6,6 +6,8 @@ use std::net::ToSocketAddrs;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::Mutex;
 
+const DEFAULT_MAX_CLIENTS: usize = 64;
+
 /// UDP MAVLink connection
 
 pub fn select_protocol<M: Message>(address: &str) -> io::Result<Box<dyn MavConnection<M>>> {
@@ -195,4 +197,122 @@ impl<M: Message> MavConnection<M> for UdpConnection {
     fn get_protocol_version(&self) -> MavlinkVersion {
         self.protocol_version
     }
+}
+
+pub(super) struct UdpMultiWrite {
+    pub(super) socket: UdpSocket,
+    pub(super) dests: Vec<SocketAddr>,
+    pub(super) max_clients: usize,
+    pub(super) sequence: u8,
+}
+
+/// UDP MAVLink connection supporting multiple clients.
+///
+/// Unlike `UdpConnection` which tracks a single remote endpoint,
+/// this connection broadcasts to all clients that have sent packets.
+pub struct UdpMultiConnection {
+    pub(super) reader: Mutex<UdpRead>,
+    pub(super) writer: Mutex<UdpMultiWrite>,
+    protocol_version: MavlinkVersion,
+    pub(super) id: String,
+}
+
+impl UdpMultiConnection {
+    pub fn new(socket: UdpSocket, id: &str, max_clients: usize) -> io::Result<Self> {
+        let max_clients = max_clients.max(1);
+        Ok(Self {
+            reader: Mutex::new(UdpRead {
+                socket: socket.try_clone()?,
+                recv_buf: PacketBuf::new(),
+            }),
+            writer: Mutex::new(UdpMultiWrite {
+                socket,
+                dests: Vec::with_capacity(max_clients),
+                max_clients,
+                sequence: 0,
+            }),
+            protocol_version: MavlinkVersion::V2,
+            id: id.to_string(),
+        })
+    }
+}
+
+impl<M: Message> MavConnection<M> for UdpMultiConnection {
+    fn recv(&self) -> Result<(MavHeader, M), crate::error::MessageReadError> {
+        let mut guard = self.reader.lock().unwrap();
+        let state = &mut *guard;
+        loop {
+            if state.recv_buf.len() == 0 {
+                let (len, src) = state.socket.recv_from(state.recv_buf.reset())?;
+                state.recv_buf.set_len(len);
+                let mut w = self.writer.lock().unwrap();
+                if !w.dests.contains(&src) {
+                    if w.dests.len() >= w.max_clients {
+                        w.dests.swap_remove(0);
+                    }
+                    w.dests.push(src);
+                }
+            }
+            if let ok @ Ok(..) = read_versioned_msg(&mut state.recv_buf, self.protocol_version) {
+                return ok;
+            }
+        }
+    }
+
+    fn send(&self, header: &MavHeader, data: &M) -> Result<usize, crate::error::MessageWriteError> {
+        let mut guard = self.writer.lock().unwrap();
+        let state = &mut *guard;
+        let header = MavHeader {
+            sequence: state.sequence,
+            system_id: header.system_id,
+            component_id: header.component_id,
+        };
+        state.sequence = state.sequence.wrapping_add(1);
+        let mut buf = Vec::new();
+        write_versioned_msg(&mut buf, self.protocol_version, header, data)?;
+        for &addr in state.dests.iter() {
+            let _ = state.socket.send_to(&buf, addr);
+        }
+        Ok(buf.len())
+    }
+
+    fn set_protocol_version(&mut self, version: MavlinkVersion) {
+        self.protocol_version = version;
+    }
+
+    fn get_protocol_version(&self) -> MavlinkVersion {
+        self.protocol_version
+    }
+}
+
+/// Creates a UDP server connection that broadcasts to multiple clients.
+///
+/// Address format: `host:port` or `host:port:max_clients`
+///
+/// When `max_clients` is omitted, defaults to 64.
+pub fn udpins(address: &str) -> io::Result<UdpMultiConnection> {
+    // First, try to interpret the entire address as a valid socket address (host:port)
+    let (addr_str, max_clients) = if address
+        .to_socket_addrs()
+        .ok()
+        .and_then(|mut i| i.next())
+        .is_some()
+    {
+        (address, DEFAULT_MAX_CLIENTS)
+    } else {
+        // If that fails, try to split off a trailing max_clients value
+        match address.rsplit_once(':') {
+            Some((left, right)) => match right.parse::<usize>() {
+                Ok(n) => (left, n),
+                Err(_) => (address, DEFAULT_MAX_CLIENTS),
+            },
+            None => (address, DEFAULT_MAX_CLIENTS),
+        }
+    };
+    let addr = addr_str
+        .to_socket_addrs()?
+        .next()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "udpins: invalid address"))?;
+    let socket = UdpSocket::bind(addr)?;
+    UdpMultiConnection::new(socket, &format!("udpins:{}", address), max_clients)
 }
